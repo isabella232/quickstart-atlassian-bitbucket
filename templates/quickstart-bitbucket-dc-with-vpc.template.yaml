@@ -20,6 +20,7 @@ Metadata:
           - DeploymentAutomationPlaybook
           - DeploymentAutomationCustomParams
           - DeploymentAutomationKeyName
+          - BackupManifestURL
       - Label:
           default: File server
         Parameters:
@@ -125,6 +126,8 @@ Metadata:
         default: Custom command-line parameters for Ansible
       DeploymentAutomationKeyName:
         default: SSH key name to use with the repository
+      BackupManifestURL:
+        default: URL for backup manifest FIXME
       CloudWatchIntegration:
         default: Enable CloudWatch integration
       ElasticsearchInstanceType:
@@ -328,6 +331,10 @@ Parameters:
     Default: ""
     Type: String
     Description: Named Key Pair name to use with this repository. The key should be imported into the SSM parameter store. (Optional)
+  BackupManifestURL:
+    Default: ""
+    Type: String
+    Description: URL for backup manifest FIXME
   CloudWatchIntegration:
     Default: "Metrics and Logs"
     Type: String
@@ -644,6 +651,8 @@ Resources:
         DeploymentAutomationPlaybook: !Ref 'DeploymentAutomationPlaybook'
         DeploymentAutomationKeyName: !Ref 'DeploymentAutomationKeyName'
         DeploymentAutomationCustomParams: !Ref 'DeploymentAutomationCustomParams'
+        BackupManifestURL: !Ref 'BackupManifestURL'
+
         ExportPrefix: !Ref ExportPrefix
         ElasticsearchInstanceType: !Ref 'ElasticsearchInstanceType'
         ESBucketName: !Ref 'ESBucketName'
