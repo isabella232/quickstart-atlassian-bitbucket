@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "BitbucketVersion",
-    "ParameterValue": "6.10.1"
+    "ParameterValue": "6.10.5"
   },
   {
     "ParameterKey": "BitbucketAdminPassword",
