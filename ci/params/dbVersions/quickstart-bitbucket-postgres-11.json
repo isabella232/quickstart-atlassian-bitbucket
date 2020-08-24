@@ -1,9 +1,5 @@
 [
   {
-    "ParameterKey": "DeploymentAutomationBranch",
-    "ParameterValue": "feature/AZURE-211-add-sql-server-support-to-crow"
-  },
-  {
     "ParameterKey": "DBMultiAZ",
     "ParameterValue": "false"
   },
@@ -18,6 +14,14 @@
   {
     "ParameterKey": "CidrBlock",
     "ParameterValue": "0.0.0.0/0"
+  },
+  {
+    "ParameterKey": "DBEngineVersion",
+    "ParameterValue": "11"
+  },
+  {
+    "ParameterKey": "DBEngine",
+    "ParameterValue": "PostgreSQL"
   },
   {
     "ParameterKey": "DBIops",

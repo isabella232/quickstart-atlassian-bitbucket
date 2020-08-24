@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: "Atlassian Bitbucket Data Center QS(0034)"
+Description: "Atlassian Bitbucket Data Center (qs-1qup6ra1t)"
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -15,6 +15,7 @@ Metadata:
           - ClusterNodeInstanceType
           - ClusterNodeMax
           - ClusterNodeMin
+          - ClusterNodeVolumeSize
           - DeploymentAutomationRepository
           - DeploymentAutomationBranch
           - DeploymentAutomationPlaybook
@@ -31,6 +32,7 @@ Metadata:
           default: Database
         Parameters:
           - DBEngine
+          - DBEngineVersion
           - DBInstanceClass
           - DBIops
           - DBMasterUserPassword
@@ -96,10 +98,14 @@ Metadata:
         default: Minimum number of cluster nodes
       ClusterNodeInstanceType:
         default: Bitbucket cluster node instance type
+      ClusterNodeVolumeSize:
+        default: Cluster node instance volume size
       CreateBucket:
         default: Create S3 bucket for Elasticsearch snapshots
       DBEngine:
         default: The database engine to deploy with
+      DBEngineVersion:
+        default: The database engine version to use
       DBInstanceClass:
         default: Database instance class
       DBIops:
@@ -308,6 +314,10 @@ Parameters:
     Default: 1
     Description: Set to 1 for new deployment. Can be updated post launch.
     Type: Number
+  ClusterNodeVolumeSize:
+    Default: 50
+    Description: Size of cluster node root volume in Gb
+    Type: Number
   CreateBucket:
     Default: "true"
     AllowedValues: ["true", "false"]
@@ -347,6 +357,14 @@ Parameters:
       - 'Amazon Aurora PostgreSQL'
       - 'PostgreSQL'
     ConstraintDescription: Must be 'Amazon Aurora PostgreSQL' or 'PostgreSQL'.
+    Type: String
+  DBEngineVersion:
+    Default: 11
+    AllowedValues:
+      - 10
+      - 11
+      - 12
+    Description: "The database engine version to use; we'll install a suitable minor version for your chosen engine. Make sure that the Bitbucket version you're installing supports the database engine selected."
     Type: String
   DBInstanceClass:
     Default: db.m4.large
@@ -703,7 +721,7 @@ Resources:
           - Effect: Allow
             Action:
               - 'ssm:PutParameter'
-            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/pinned-ansible-sha"
+            Resource: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/pinned-ansible-sha"
       Roles:
         - !Ref BitbucketFileServerRole
         - !Ref BitbucketClusterNodeRole
@@ -827,10 +845,10 @@ Resources:
           PropagateAtLaunch: true
         # NOTE: The leading COMMIT/TIMESTAMP are used to locate the position to update; see scripts/update-tags.py
         - Key: "atl:quickstart:commit-id"
-          Value: "COMMIT: 9a3cdf4ced02708865524d4ef0a13fb11a41740a"
+          Value: "COMMIT: e32a5cf84d397eb727e320df4c650c5f43976025"
           PropagateAtLaunch: true
         - Key: "atl:quickstart:timestamp"
-          Value: "TIMESTAMP: 2020-04-14T00:29:54Z"
+          Value: "TIMESTAMP: 2020-08-18T11:20:07Z"
           PropagateAtLaunch: true
   ClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -1167,6 +1185,9 @@ Resources:
 
     Properties:
       BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref ClusterNodeVolumeSize
         - DeviceName: /dev/xvdf
           Ebs:
             DeleteOnTermination: !Ref HomeDeleteOnTermination
@@ -1185,7 +1206,7 @@ Resources:
       KeyName: !If
         - KeyProvided
         - !Ref KeyPairName
-        - Fn::ImportValue: !Sub "${ExportPrefix}DefaultKey"
+        - Ref: AWS::NoValue
       NetworkInterfaces:
         - GroupSet: [!Ref SecurityGroup]
           AssociatePublicIpAddress: false
@@ -1275,13 +1296,13 @@ Resources:
       DBSnapshotIdentifier: !If [RestoreFromRDSSnapshot, !Ref DBSnapshotId, !Ref "AWS::NoValue"]
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: postgres
-      EngineVersion: '10'
+      EngineVersion: !Ref DBEngineVersion
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref "AWS::NoValue"]
       MasterUsername: !If ["SetDBMasterUserAndPassword", postgres, !Ref "AWS::NoValue"]
       MasterUserPassword: !If ["SetDBMasterUserAndPassword", !Ref DBMasterUserPassword, !Ref "AWS::NoValue"]
       MultiAZ: !If [StandbyMode, !Ref "AWS::NoValue", !Ref DBMultiAZ]
-      StorageType: !If [DBProvisionedIops, io1, gp2]
       SourceDBInstanceIdentifier: !If [StandbyMode, !Ref DBMaster, !Ref "AWS::NoValue"]
+      StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName} Bitbucket PostgreSQL Database"
@@ -1303,14 +1324,15 @@ Resources:
         - QSS3Region: !If ["GovCloudCondition", "s3-us-gov-west-1", "s3"]
       Parameters:
         DatabaseImplementation: !Ref DBEngine
-        DBSecurityGroup: !Ref SecurityGroup
+        DBAllocatedStorage: !Ref DBStorage
         DBAutoMinorVersionUpgrade: "true"
         DBBackupRetentionPeriod: "1"
+        DBEngineVersion: !Ref DBEngineVersion
         DBInstanceClass: !Ref DBInstanceClass
         DBIops: !Ref DBIops
         DBMasterUserPassword: !Ref DBMasterUserPassword
         DBMultiAZ: !Ref DBMultiAZ
-        DBAllocatedStorage: !Ref DBStorage
+        DBSecurityGroup: !Ref SecurityGroup
         DBStorageType: !Ref DBStorageType
         ExportPrefix: !Ref ExportPrefix
         QSS3BucketName: !Ref QSS3BucketName

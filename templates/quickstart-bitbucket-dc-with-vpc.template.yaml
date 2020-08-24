@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: "Atlassian Bitbucket Data Center in new VPC License: Apache 2.0"
+Description: "Atlassian Bitbucket Data Center in new VPC License: Apache 2.0 (qs-1qup6r9tq)"
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -15,6 +15,7 @@ Metadata:
           - ClusterNodeInstanceType
           - ClusterNodeMax
           - ClusterNodeMin
+          - ClusterNodeVolumeSize
           - DeploymentAutomationRepository
           - DeploymentAutomationBranch
           - DeploymentAutomationPlaybook
@@ -31,6 +32,7 @@ Metadata:
           default: Database
         Parameters:
           - DBEngine
+          - DBEngineVersion
           - DBInstanceClass
           - DBIops
           - DBMasterUserPassword
@@ -107,10 +109,14 @@ Metadata:
         default: Minimum number of cluster nodes
       ClusterNodeInstanceType:
         default: Bitbucket cluster node instance type
+      ClusterNodeVolumeSize:
+        default: Cluster node instance volume size
       CreateBucket:
         default: Create S3 bucket for Elasticsearch snapshots
       DBEngine:
         default: The database engine to deploy with
+      DBEngineVersion:
+        default: The database engine version to use
       DBInstanceClass:
         default: Database instance class
       DBIops:
@@ -335,6 +341,10 @@ Parameters:
     Default: 1
     Description: Set to 1 for new deployment. Can be updated post launch.
     Type: Number
+  ClusterNodeVolumeSize:
+    Default: 50
+    Description: Size of cluster node root volume in Gb
+    Type: Number
   CreateBucket:
     Default: "true"
     AllowedValues: ["true", "false"]
@@ -374,6 +384,14 @@ Parameters:
       - 'Amazon Aurora PostgreSQL'
       - 'PostgreSQL'
     ConstraintDescription: Must be 'Amazon Aurora PostgreSQL' or 'PostgreSQL'.
+    Type: String
+  DBEngineVersion:
+    Default: 11
+    AllowedValues:
+      - 10
+      - 11
+      - 12
+    Description: "The database engine version to use; we'll install a suitable minor version for your chosen engine. Make sure that the Bitbucket version you're installing supports the database engine selected."
     Type: String
   DBInstanceClass:
     Default: db.m4.large
@@ -682,6 +700,7 @@ Resources:
         ClusterNodeInstanceType: !Ref 'ClusterNodeInstanceType'
         ClusterNodeMax: !Ref 'ClusterNodeMax'
         ClusterNodeMin: !Ref 'ClusterNodeMin'
+        ClusterNodeVolumeSize: !Ref 'ClusterNodeVolumeSize'
         CreateBucket: !Ref 'CreateBucket'
         CustomDnsName: !Ref 'CustomDnsName'
         DBInstanceClass: !Ref 'DBInstanceClass'
@@ -690,6 +709,7 @@ Resources:
         DBMultiAZ: !Ref 'DBMultiAZ'
         DBPassword: !Ref 'DBPassword'
         DBEngine: !Ref 'DBEngine'
+        DBEngineVersion: !Ref 'DBEngineVersion'
         DBMaster: !Ref 'DBMaster'
         DBSnapshotId: !Ref 'DBSnapshotId'
         DBStorage: !Ref 'DBStorage'
