@@ -503,7 +503,7 @@ Mappings:
     ca-central-1:
       HVM64: ami-0b8aadaca57a6d5e7
     eu-central-1:
-      HVM64: ami-0946d2bfdcabd0165
+      HVM64: ami-0d75acaa9c55fc5d4
     eu-west-1:
       HVM64: ami-0253fbd6b64b72c1b
     eu-west-2:
